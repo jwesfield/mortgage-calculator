@@ -11,47 +11,77 @@ function SlideInput(props) {
   }
 
   function onChangePercent(value) {
+    console.log(props)
     props.setPercent(value);
-    props.setInputValue(props.home * (value / 100));
     localStorage.setItem(props.storage + '_percent', value);
-    localStorage.setItem(props.storage, props.home * (value / 100));
+    if(props.storage != "rate"){
+      props.setInputValue(props.home * (value / 100));
+      localStorage.setItem(props.storage, props.home * (value / 100));
+    } else {
+      onChange(value);
+    }
+  }
+
+  function pFormatter(value) {
+    return `${value}%`;
+  }
+  function pParser(value) {
+    return value.replace('%', '');
+  }
+  
+  function cFormatter(value) {
+    if(props.storage === 'years'){
+      return `${value} years`.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    } else {
+      return `₪ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+    
+  }
+  function cParser(value) {
+    if(props.storage === 'years'){
+      return value.replace(/\₪\s?|(,*)/g, '');
+    } else {
+      return value.replace(/\₪\s?|(,*)/g, '');
+    }
+    
   }
 
   return (
     <div>
       <Row>
         <Col span={4}>
-          <Text strong>{props.storage}</Text>
+          <Text strong>{props.title}</Text>
         </Col>
         <Col span={8}>
           <Slider
-            min={props.percent ? 0 : props.min}
-            max={props.percent ? 10 : props.max}
-            step={props.percent ? 0.5 : props.step}
+            min={props.home ? 0 : props.min}
+            max={props.home ? 10 : props.max}
+            step={props.percent ? props.step < 0.5 ? props.step : 0.5 : props.step}
             onChange={props.percent ? onChangePercent : onChange}
             value={props.percent ? props.percent : props.inputValue}
           />
         </Col>
         <Col span={3}>
-          <InputNumber
-            className="inputCurrency"
-            min={props.min || 0}
-            max={props.max || 100}
-            step={props.step || 1}
-            style={{ margin: '0 16px' }}
-            value={props.inputValue}
-            onChange={onChange}
-            formatter={cFormatter}
-            parser={cParser}
-            disabled={!props.boxes[0]}
-          />
+          {props.percentOnly == true ? null :
+                <InputNumber
+                className="inputCurrency"
+                min={props.min || 0}
+                max={props.max || 100}
+                step={props.step || 1}
+                style={{ margin: '0 16px' }}
+                value={props.inputValue}
+                onChange={onChange}
+                formatter={cFormatter}
+                parser={cParser}
+                disabled={!props.boxes[0]}
+              />}
         </Col>
         <Col span={3}>
           {props.boxes[1] == true ? (
             <InputNumber
               min={0}
               max={10}
-              step={0.5}
+              step={props.step < 0.5 ? props.step : 0.5}
               style={{ margin: '0 16px' }}
               value={props.percent}
               onChange={onChangePercent}
@@ -64,21 +94,6 @@ function SlideInput(props) {
       <Divider type="horizontal" />
     </div>
   );
-}
-
-function pFormatter(value) {
-  return `${value}%`;
-}
-function pParser(value) {
-  return value.replace('%', '');
-}
-
-function cFormatter(value) {
-  return `₪ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-}
-function cParser(value) {
-  return value.replace(/\₪\s?|(,*)/g, '');
-  //return value.replace('₪', '');
 }
 
 export default SlideInput;
