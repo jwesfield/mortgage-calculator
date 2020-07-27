@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import logo from './logo.svg';
 import './App.css';
-import { Row, Col, Divider, Statistic } from 'antd';
+import { Row, Col, Divider, Statistic, InputNumber } from 'antd';
 import 'antd/dist/antd.css'; // or 'antd/dist/antd.less'
 import SlideInput from './components/SlideInput/SlideInput';
 function App() {
@@ -31,6 +31,7 @@ function homeChanged(value){
   setTax(value * (tax_percent / 100))
   setAgent(value * (agent_percent / 100))
   setLawyer(value * (lawyer_percent / 100))
+  calculateTax(value)
 }
 
 function mortgageChanged(value){
@@ -65,12 +66,23 @@ function calculateMortgague(mortgage,rate,years){
         setInputValue={homeChanged}
         min={1500000}
         max={4000000}
-        step={50000}
+        step={25000}
         storage={'home'}
         title={'Home Price'}
       />
-
-      <SlideInput
+        {/* <Statistic title="Tax" value={} prefix={"₪"} /> */}
+        <InputNumber
+              min={0}
+              max={100000}
+              step={1}
+              style={{ margin: '0 16px' }}
+              value={Math.round(calculateTax(home))}
+              formatter={cFormatter}
+              parser={cParser}
+              disabled
+            />
+        <Divider type="horizontal" />
+      {/* <SlideInput
         home={home}
         boxes={[false, true]}
         inputValue={tax}
@@ -82,7 +94,7 @@ function calculateMortgague(mortgage,rate,years){
         percent={tax_percent}
         setPercent={setTax_percent}
         title={'Purchase Tax'}
-      />
+      /> */}
       <SlideInput
         home={home}
         boxes={[false, true]}
@@ -90,7 +102,7 @@ function calculateMortgague(mortgage,rate,years){
         setInputValue={setAgent}
         min={0}
         max={4000000}
-        step={0.5}
+        step={0.1}
         storage={'agent'}
         percent={agent_percent}
         setPercent={setAgent_percent}
@@ -103,7 +115,7 @@ function calculateMortgague(mortgage,rate,years){
         setInputValue={setLawyer}
         min={0}
         max={4000000}
-        step={0.5}
+        step={0.1}
         storage={'lawyer'}
         percent={lawyer_percent}
         setPercent={setLawyer_percent}
@@ -119,7 +131,7 @@ function calculateMortgague(mortgage,rate,years){
         storage={'other'}
         title={'Other'}
       />
-      <Statistic title="Total Home Cost" value={getTotal(home,tax,lawyer,agent,other)} prefix={"₪"} />
+      <Statistic title="Total Home" value={getTotal(home,tax,lawyer,agent,other)} prefix={"₪"} />
       <Divider type="horizontal" />
       <SlideInput
         boxes={[true, false]}
@@ -190,13 +202,45 @@ function calculateMortgague(mortgage,rate,years){
 function getTotal(home,tax,lawyer,agent,other){
   var res = 0 ;
   try {
-    res = parseInt(home) + parseInt(tax) + parseInt(lawyer) + parseInt(agent) + parseInt(other)
+    res = parseInt(home) + parseInt(calculateTax(home)) + (1.17 * parseInt(lawyer)) + (1.17 * parseInt(agent)) + parseInt(other)
   } catch(e){
 
   }
 return res;
 }
 
+// 11364.65
+function calculateTax(price){
+  var brackets = [0, 1744505, 2069205, 5338290, 17794305];
+  var percent = [0,0, 0.035, 0.05, 0.08];
+  var tax = 0;
+  var i = 1;
+  while (price > 0) {
+    var amount = brackets[i] - brackets[i - 1];
+    var z = price - amount;
+    if (z > 0) {
+      tax += amount * percent[i];
+      console.log(amount + " * " + percent[i])
+      price = price - amount;
+    } else {
+      tax += price * percent[i];
+      console.log(price + " * " + percent[i])
+
+      price = 0;
+    }
+    i++;
+  }
+
+  return tax
+}
+
 export default App;
 
 //https://dev.to/yuribenjamin/how-to-deploy-react-app-in-github-pages-2a1f
+
+function cFormatter(value) {
+    return `₪ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+function cParser(value) {
+    return value.replace(/\₪\s?|(,*)/g, '');
+}
